@@ -1,6 +1,6 @@
 # Openshift4 Auto Install VMware
 
-> **Important**: The work on the current repository is based on the work of [@rcarrata]( https://github.com/rcarrata) at https://github.com/rcarrata/ocp4-auto-install, wich is designed to use AWS as the infra provider. 
+> **Important**: The work on the current repository is based on the work of [@rcarrata](https://github.com/rcarrata) and [@antonioc](https://github.com/antonionc) at https://github.com/rcarrata/ocp4-auto-install, wich is designed to use AWS as the infra provider. 
 
 
 > **Note**: This is a WIP repository. Expect some changes, and modifications in the future.
