@@ -1,0 +1,32 @@
+---
+# tasks file for tower_ldap_settings
+- include_vars:
+    file: "{{ item }}"
+  loop:
+    - "vars/configure_tower_general.yml"
+    - "vars/configure_tower_vault.yml"
+    - "vars/configure_tower_projects.yml"
+  when: configure_tower_projects is not defined
+
+- name: Configure Tower Projects
+  ansible.tower.tower_project:
+    tower_username: "{{ configure_tower_username }}"
+    tower_password: "{{ configure_tower_password }}"
+    tower_host: "{{ configure_tower_server }}"
+    validate_certs: "{{ configure_tower_validate_certs }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description | default (omit) }}"
+    scm_url: "{{ item.scm_url | default(omit) }}"
+    scm_type: "{{ item.scm_type | default('git') }}"
+    scm_clean: "{{ item.scm_clean | default('false') }}"
+    scm_branch: "{{ item.scm_branch | default(omit) }}"
+    scm_credential: "{{ item.scm_credential | default(omit) }}"
+    scm_delete_on_update: "{{ item.scm_delete_on_update | default('false') }}"
+    scm_update_on_launch: "{{ item.scm_update_on_launch | default('false') }}"
+    scm_update_cache_timeout: "{{ item.scm_update_cache_timeout |default('60')}}"
+    custom_virtualenv: "{{ item.custom_virtualenv | default(omit)}}"
+    organization: "{{ item.organization | default('Default') }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ configure_tower_projects }}"
+  when: configure_tower_projects is defined
+  delegate_to: "{{ 'localhost' if tower_local else omit }}"

@@ -1,0 +1,12 @@
+---
+# defaults file for tower-piplibdep
+
+virtualenv_path: /var/lib/awx/venv/ansible
+proxyserver: 127.0.0.1
+proxyport: 8080
+proxyuser: test
+proxypass: test
+pip_extra_args: "--trusted-host pypi.python.org --trusted-host pypi.org --no-cache-dir"
+useproxy: true
+list_pip_package:
+  - six

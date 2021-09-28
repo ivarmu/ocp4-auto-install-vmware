@@ -1,0 +1,106 @@
+---
+# tasks file for tower-create-venv - main.yml
+- setup:
+
+- include_vars:
+    file: "{{ include_vars_tower_create_venv }}"
+  loop:
+    - "vars/configure_tower_general.yml"
+    - "vars/configure_tower_vault.yml"
+    - "vars/configure_tower_venvs.yml"
+  loop_control:
+    loop_var: include_vars_tower_create_venv
+
+# - name: "Tower Create VENV ({{ venv_name }}) | Set fact to build proxy url | Proxy with $user and $pass"
+#   set_fact:
+#     proxy_url: "{{ proxyuser }}:{{ proxypass }}@{{ proxyserver }}:{{ proxyport }}"
+#   when: proxyuser is defined and proxypass is defined and proxyserver is defined and proxyport is defined
+
+# - name: Install required packages if not already installed
+#   yum:
+#     name: gcc
+#     state: present
+
+- name: "Tower Create VENV ({{ venv_name }}) | Get Current Tower Custom Virtual Environments"
+  uri:
+    url: 'https://{{ configure_tower_server }}/api/v2/config/'
+    url_username: "{{ configure_tower_username }}"
+    url_password: "{{ configure_tower_password }}"
+    force_basic_auth: yes
+    method: GET
+    validate_certs: no
+  register: current_venvs
+  when: inventory_hostname in groups['tower']
+
+- name: "Tower Create VENV ({{ venv_name }}) | Show Current Virtual Environments"
+  debug:
+    var: current_venvs.json.custom_virtualenvs
+
+- name: "Tower Create VENV ({{ venv_name }}) | Actually create virtual environment"
+  pip:
+    name: pip
+    virtualenv: "{{ venv_base_path }}/{{ venv_name }}"
+    state: latest
+    extra_args: "{{ pip_extra_args }}"
+  # environment:
+  #   HTTP_PROXY: "{{ proxy_url | default(omit) }}"
+  #   HTTPS_PROXY: "{{ proxy_url | default(omit) }}"
+  #   http_proxy: "{{ proxy_url | default(omit) }}"
+  #   https_proxy: "{{ proxy_url | default(omit) }}"
+  remote_user: root
+  register: venv_create_res
+  when: inventory_hostname in groups['tower']
+
+- name: "Tower Create VENV ({{ venv_name }}) | Show the creation process output"
+  debug:
+    var: venv_create_res
+
+- name: "Tower Create VENV ({{ venv_name }}) | Inform Tower of the new custom venv"
+  uri:
+    url: "https://{{ configure_tower_server }}/api/v2/settings/system/"
+    url_username: "{{ configure_tower_username }}"
+    url_password: "{{ configure_tower_password }}"
+    force_basic_auth: yes
+    method: PATCH
+    validate_certs: no
+    body: |
+      {"CUSTOM_VENV_PATHS": {{ current_venvs.json.custom_virtualenvs | default([]) + [venv_base_path + '/' + venv_name] }} }
+    body_format: json
+    headers:
+      Content-Type: application/json
+  when: inventory_hostname in groups['tower']
+
+- name: "Tower Create VENV ({{ venv_name }}) | Install needed pip packages for virt env"
+  pip:
+    name:
+      - psutil
+      #- freeze
+    virtualenv: "{{ venv_base_path }}/{{ venv_name }}"
+    extra_args: "{{ pip_extra_args }}"
+  # environment:
+  #   HTTP_PROXY: "{{ proxy_url | default(omit) }}"
+  #   HTTPS_PROXY: "{{ proxy_url | default(omit) }}"
+  #   http_proxy: "{{ proxy_url | default(omit) }}"
+  #   https_proxy: "{{ proxy_url | default(omit) }}"
+  remote_user: root
+  when: inventory_hostname in groups['tower']
+
+- name: "Tower Create VENV ({{ venv_name }}) | Install aditional libs"
+#  include_role:
+#    name: tower-piplibdep
+#  vars:
+#    virtualenv_path: "{{ venv_base_path }}/{{ venv_name }}"
+  pip:
+    name: "{{ list_pip_package }}"
+    virtualenv: "{{ venv_base_path }}/{{ venv_name }}"
+    extra_args: "{{ pip_extra_args }}"
+  # environment:
+  #   HTTP_PROXY: "{{ proxy_url | default(omit) }}"
+  #   HTTPS_PROXY: "{{ proxy_url | default(omit) }}"
+  #   http_proxy: "{{ proxy_url | default(omit) }}"
+  #   https_proxy: "{{ proxy_url | default(omit) }}"
+  remote_user: root
+  when:
+    - list_pip_package is defined and list_pip_package is not none and list_pip_package|length>0
+    - inventory_hostname in groups['tower']
+...

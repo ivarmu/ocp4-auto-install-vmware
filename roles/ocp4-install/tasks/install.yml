@@ -1,0 +1,102 @@
+---
+- block:
+    - name: '[INSTALL_CONFIG][INSTALL] Show SSH Connection Information to debug the bootstrapping process'
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - |
+            Openshift nodes private key (for core user connection):
+            {{ idrsa.content | b64decode }}
+
+    - name: '[INSTALL_CONFIG][INSTALL] Installing Openshift Cluster...'
+      shell:
+        cmd: "{{ user_path }}/openshift-install create cluster --dir {{ user_path }} --log-level debug"
+        creates: "{{ user_path }}/auth"
+
+    - name: '[INSTALL_CONFIG][INSTALL] Check pid of openshift-install'
+      pids:
+        name: openshift-install
+      register: installer_pids
+
+    - name: '[INSTALL_CONFIG][INSTALL] Wait for the main installer to finish - may take around 25 minutes'
+      wait_for:
+        path: "{{ kubeconfig }}"
+        state: present
+        timeout: 5400
+      when: pids[0] is defined
+
+    - name: '[INSTALL_CONFIG][INSTALL] Slurp kubeconfig'
+      slurp:
+        path: "{{ kubeconfig }}"
+      register: res_kubeconfig
+
+    - name: '[INSTALL_CONFIG][INSTALL] Show kubeconfig to connect to the OCP4 Cluster'
+      debug:
+        msg: "{{ item }}"
+      loop:
+        - |
+            Openshift kubeconfig:
+            {{ res_kubeconfig.content | b64decode }}
+
+    - name: '[INSTALL_CONFIG][INSTALL] Wait for the Bootstrap'
+      shell:
+        cmd: "{{ user_path }}/openshift-install wait-for bootstrap-complete --dir {{ user_path }}"
+      when: pids[0] is defined
+
+    - name: '[INSTALL_CONFIG][INSTALL] Wait for the cluster'
+      shell:
+        cmd: "{{ user_path }}/openshift-install wait-for install-complete --dir {{ user_path }}"
+      when: pids[0] is defined
+
+    - name: '[INSTALL_CONFIG][INSTALL] Copy the Kubeconfig to the known location'
+      copy:
+        src: "{{ kubeconfig }}"
+        dest: "{{ local_kubeconfig }}"
+      when:
+        - local_kubeconfig is defined
+
+    - name: '[INSTALL_CONFIG][INSTALL] Gzip Install files'
+      archive:
+        path:
+          - "{{ user_path }}/.openshift_install_state.json"
+          - "{{ user_path }}/.openshift_install.log"
+          - "{{ user_path }}/terraform.tfvars.json"
+          - "{{ user_path }}/terraform.tfstate"
+          - "{{ user_path }}/metadata.json"
+          - "{{ user_path }}/terraform.aws.auto.tfvars.json"
+          - "{{ user_path }}/openshift-install"
+        dest: "{{ tower_path }}/{{ cluster_name }}-install.gz"
+        format: gz
+      when:
+        - tower_used is defined
+        - tower_used | bool
+
+  rescue:
+    - name: '[OCP4 INSTALL][INSTALL][FAIL RESCUE] Gather SSH Connection Information to debug the nodes'
+      set_fact:
+        info: "{{ (info | default([])) + [item.split('\n')] | flatten }}"
+      with_items:
+        - |
+            Openshift nodes private key (for core user connection):
+            {{ idrsa.content | b64decode }}
+      no_log: true
+
+    - name: '[OCP4 INSTALL][INSTALL][FAIL RESCUE] Print Connection Information'
+      debug:
+        var: info
+
+    - name: '[OCP4 INSTALL][INSTALL][FAIL RESCUE] Fail the execution'
+      fail:
+        msg: "The installation has failed. See output for more details"
+
+    # - name: "[INSTALL_CONFIG][INSTALL] Show debugging information"
+    #   include_tasks: print_info.yml
+    #   vars:
+    #     install_failed: True
+    #   args:
+    #     apply:
+    #       tags:
+    #         - print_info
+    #   tags:
+    #     - print_info
+...

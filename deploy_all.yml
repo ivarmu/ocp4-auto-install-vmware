@@ -1,0 +1,98 @@
+---
+- name: '[OCP4-AUTO-INSTALL] Deploy an Openshift4 cluster'
+  hosts: localhost
+  connection: local
+  vars_files:
+    - vars/{{ vars_file }}
+    - vault/vault.yml
+    - vault/{{ vcenter_vault_file }}
+  pre_tasks:
+    - name: '[OCP4-AUTO-INSTALL][PRE TASKS] Install from scratch'
+      file:
+        path: "{{ user_path }}"
+        state: absent
+      when:
+        - clean_install is defined
+        - clean_install | bool
+
+  tasks:
+    - block:
+        - name: '[OCP4-AUTO-INSTALL][PREREQS] Prerequisites for the installation'
+          include_role:
+            name: "{{ roleitem.rolename }}"
+          loop:
+            - { rolename: common }
+            - { rolename: vmw-prepare-certs, to_be_executed: "{{ auto_vcenter_ca_certs }}" }
+            - { rolename: ocp4-vcenter-prereqs, to_be_executed: "{{ cloud_provider is match('vcenter') }}" }
+          loop_control:
+            loop_var: roleitem
+          when:
+            - only_post_install != True
+            - prereqs == True
+            - roleitem.to_be_executed | default(True) | bool
+
+        - name: '[OCP4-AUTO-INSTALL][INSTALL] Installation of the OCP4 Cluster'
+          include_role:
+            name: "ocp4-install"
+          when:
+            - only_post_install != True
+          tags:
+            - print_info
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL][WORKER-NODES] Configure Worker Nodes'
+          include_role:
+            name: "ocp4-post-worker-nodes"
+          when:
+            - worker_nodes is defined
+            - worker_nodes | bool
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL][INFRA-NODES] Deploy and configure Infra Nodes'
+          include_role:
+            name: "ocp4-post-infra-nodes"
+          when:
+            - infra_nodes is defined
+            - infra_nodes | bool
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL][OAUTH] Configure OAuth'
+          include_role:
+            name: "ocp4-post-oauth"
+          when:
+            - oauth is defined
+            - oauth != False
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL][LOGGING] Install and configure Logging'
+          include_role:
+            name: "ocp4-post-logging"
+          when:
+            - logging is defined
+            - logging | bool
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL][MONITORING] Configure Monitoring'
+          include_role:
+            name: "ocp4-post-monitoring"
+          when:
+            - monitoring is defined
+            - monitoring | bool
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL][REGISTRY] Install and configure Registry'
+          include_role:
+            name: "ocp4-post-registry"
+          when:
+            - registry is defined
+            - registry | bool
+
+        - name: '[OCP4-AUTO-INSTALL][POST-INSTALL] Disable Operator Hub Default Sources'
+          include_role:
+            name: "ocp4-post-operatorhub"
+          when:
+            - disable_operator_hub is defined
+            - disable_operator_hub | bool
+          tags:
+            disable_operator_hub_default_sources
+
+      always:
+        - name: '[OCP4-AUTO-INSTALL][FINAL-TASKS] Cleanup the local installation folders'
+          file:
+            path: "{{ user_path }}"
+            state: absent
+...

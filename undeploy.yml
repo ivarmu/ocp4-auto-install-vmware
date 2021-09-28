@@ -1,0 +1,39 @@
+---
+- name: '[OCP4-AUTO-UNINSTALL] Remove an Openshift4 cluster'
+  hosts: localhost
+  connection: local
+  vars_files:
+    - vars/{{ vars_file }}
+    - vault/vault.yml
+    - vault/{{ vcenter_vault_file }}
+  tasks:
+    - name: '[OCP4-AUTO-UNINSTALL][UNINSTALL] Uninstall of the OCP4 Cluster'
+      include_role:
+        name: "ocp4-uninstall"
+      when:
+        - uninstall_ocp is defined
+        - uninstall_ocp | bool
+        - cloud_provider is not match('vcenter')
+
+    - block:
+        - name: '[OCP4-AUTO-UNINSTALL][PREREQS] Prerequisites for the uninstallation'
+          include_role:
+            name: "{{ item }}"
+          loop:
+            - common
+          when:
+            - only_post_install != True
+
+        - name: '[OCP4-AUTO-UNINSTALL][UNINSTALL] Destroy the OCP4 Cluster (vCenter)'
+          include_role:
+            name: "ocp4-vcenter-destroy"
+      when:
+        - uninstall_ocp is defined
+        - uninstall_ocp | bool
+        - cloud_provider is match('vcenter')
+
+    - name: '[OCP4-AUTO-INSTALL][PRE TASKS] Cleanup the local installation folders'
+      file:
+        path: "{{ user_path }}"
+        state: absent
+...

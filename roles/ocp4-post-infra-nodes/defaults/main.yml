@@ -1,0 +1,5 @@
+---
+# defaults file for ocp4-post-infra-nodes
+
+infra_node_replicas: 3
+...

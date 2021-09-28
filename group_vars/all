@@ -1,0 +1,12 @@
+# User Path
+install_path: "/var/lib/awx/tmp"
+user_path: "{{ install_path }}/{{ cluster_name }}"
+# tower_path: "$HOME/.kube"
+tower_path: "{{ user_path }}/.kube"
+
+# Define this into the vars/vars.yml
+# kubeconfig: "{{ user_path }}/auth/kubeconfig"
+
+# MachineSets
+kube_label: "node-role.kubernetes.io"
+infra_label: "infra"

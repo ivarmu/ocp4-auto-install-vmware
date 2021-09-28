@@ -1,0 +1,8 @@
+---
+# vars file for ocp4-install
+
+var_installer_baseurl: "{{ global_var_installer_baseurl | default('https://mirror.openshift.com/pub/openshift-v4/clients/ocp/' + ocp4_version) }}"
+var_installer_program: "{{ global_var_installer_program | default('openshift-install-linux-' + ocp4_version + '.tar.gz') }}"
+var_installer_clienttools: "{{ global_var_installer_clienttools | default('openshift-client-linux-' + ocp4_version + '.tar.gz') }}"
+var_virtual_environment: "{{ global_var_virtual_environment | default('virtualEnvironment2.7.tar.gz') }}"
+...

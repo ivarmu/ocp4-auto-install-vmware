@@ -1,0 +1,132 @@
+---
+# tasks file for ocp4-vcenter-destroy
+- name: '[OCP4 VCENTER DESTROY] Get vCenter Folder Information'
+  community.vmware.vmware_folder_info:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ vcenter_datacenter }}'
+  register: vcenter_folder_info
+
+- name: '[OCP4 VCENTER DESTROY] set vcenter folder info'
+  set_fact:
+    folder_names: "{{ vcenter_folder_info.flat_folder_info | selectattr('path', 'search', '^.*' + vcenter_parent_folder + '/'+ cluster_name + '$') | map(attribute='path') | list }}"
+
+- name: '[OCP4 VCENTER DESTROY] Get the list of the existing VMs'
+  vmware_vm_info:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    folder: '{{ folder_name }}'
+    validate_certs: False
+  loop: "{{ folder_names }}"
+  loop_control:
+    loop_var: folder_name
+  when: folder_names is defined
+  register: vm_list
+
+- name: '[OCP4 VCENTER DESTROY] Get the VMs UUIDs at our cluster'
+  set_fact:
+    vms_uuids: "{{ result.virtual_machines | selectattr('guest_name', 'search', '^.*' + cluster_name + '.*$') | map(attribute='uuid') | list }}"
+  when: result.virtual_machines is defined
+  loop: "{{ vm_list.results }}"
+  loop_control:
+    loop_var: result
+  no_log: true
+
+- name: '[OCP4 VCENTER DESTROY] Show the VMs UUIDs at out cluster'
+  debug:
+    var: vms_uuids
+
+- name: '[OCP4 VCENTER DESTROY] Removes the vm'
+  vmware_guest:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    validate_certs: False
+    uuid: "{{ vm_uuid }}"
+    state: absent
+    force: true
+  register: remove_res
+  when: vms_uuids is defined
+  ignore_errors: true
+  with_items: "{{ vms_uuids }}"
+  loop_control:
+    loop_var: vm_uuid
+  async: 3600
+  poll: 0
+
+- name: '[OCP4 VCENTER DESTROY] Wait for VMs to be removed'
+  async_status:
+    jid: "{{ item.ansible_job_id }}"
+  register: remove_jobs
+  when: item.ansible_job_id is defined
+  until: remove_jobs.finished
+  retries: 300
+  with_items: "{{ remove_res.results }}"
+
+- name: '[OCP4 VCENTER DESTROY] Destroy the entire vCenter Folder'
+  community.vmware.vcenter_folder:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter_name: '{{ vcenter_datacenter }}'
+    parent_folder: '{{ vcenter_parent_folder }}'
+    folder_name: "{{ folder_name | regex_replace('.*/(..)', '\\1') | trim }}"
+    state: absent
+  loop: "{{ folder_names }}"
+  loop_control:
+    loop_var: folder_name
+  when: folder_names is defined
+  register: vm_folder_deletion_result
+
+#
+# - set_fact:
+#     ansible_env: |
+#      {%- set res = {} -%}
+#      {% for key, val in ansible_env.items() -%}
+#        {%- if key == 'PYTHONPATH' -%}
+#          {%- set ignored = res.setdefault(key, user_path + '/virtualEnvironment2.7/lib/python3.6/site-packages:/var/lib/awx/venv/ansible/ansible/lib/python3.6/site-packages') -%}
+#        {%- elif key == '_' -%}
+#          {%- set ignored = res.setdefault(key, user_path + '/virtualEnvironment2.7/bin/python3') -%}
+#        {%- elif key == 'PATH' -%}
+#          {%- set ignored = res.setdefault(key, user_path + '/virtualEnvironment2.7/bin:/var/lib/awx/venv/ansible/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin') -%}
+#        {%- elif key == 'VIRTUAL_ENV' -%}
+#          {%- set ignored = res.setdefault(key, user_path + '/virtualEnvironment2.7') -%}
+#        {%- elif key == 'ANSIBLE_VENV_PATH' -%}
+#          {%- set ignored = res.setdefault(key, user_path + '/virtualEnvironment2.7') -%}
+#        {%- else -%}
+#          {%- set ignored = res.setdefault(key, val) -%}
+#        {%- endif -%}
+#      {%- endfor -%}
+#      {{ res }}
+
+- name: Gather info about tag categories
+  community.vmware.vmware_category_info:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: False
+  register: all_tag_category_info
+  environment:
+    PYTHONPATH: "/var/lib/awx/venv/ansible/lib/python2.7/site-packages:/var/lib/awx/venv/awx/lib64/python3.6/site-packages/ansible_runner/callbacks:{{ user_path }}/virtualEnvironment2.7/lib/python2.7/site-packages/"
+
+- name: '[OCP4 VCENTER DESTROY] set vcenter category info'
+  set_fact:
+    category_names: "{{ all_tag_category_info.tag_category_info | selectattr('category_name', 'search', '^openshift-' + cluster_name + '-.*$') | map(attribute='category_name') | list }}"
+
+- name: '[OCP4 VCENTER DESTROY] Delete category'
+  community.vmware.vmware_category:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: False
+    category_name: "{{ category_name }}"
+    state: absent
+  environment:
+    PYTHONPATH: "/var/lib/awx/venv/ansible/lib/python2.7/site-packages:/var/lib/awx/venv/awx/lib64/python3.6/site-packages/ansible_runner/callbacks:{{ user_path }}/virtualEnvironment2.7/lib/python2.7/site-packages/"
+  loop: "{{ category_names }}"
+  loop_control:
+    loop_var: category_name
+
+...

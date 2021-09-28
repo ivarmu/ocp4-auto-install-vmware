@@ -1,0 +1,6 @@
+---
+collections:
+  - name: ansible.tower
+    # version: 3.8.2
+    # source: See https://cloud.redhat.com/ansible/automation-hub/ansible/tower
+...

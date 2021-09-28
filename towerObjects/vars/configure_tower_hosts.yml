@@ -1,0 +1,6 @@
+---
+configure_tower_hosts:
+  - name: "EphemeralOCP4localhost"
+    description: "localhost for EphemeralOCP4"
+    inventory: "EphemeralOCP4localhost"
+...

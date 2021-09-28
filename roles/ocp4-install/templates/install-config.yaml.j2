@@ -1,0 +1,78 @@
+apiVersion: v1
+baseDomain: {{ ocp4_base_domain }}
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: {{ worker_instance_count }}
+  platform:
+    vsphere:
+      cpus: {{ worker_cpus }}
+      coresPerSocket: {{ worker_coresPerSocket }}
+      memoryMB: {{ worker_memory_size }}
+      osDisk:
+        diskSizeGB: {{ worker_disk_size }}
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: {{ master_instance_count }}
+  platform:
+    vsphere:
+      cpus: {{ master_cpus }}
+      coresPerSocket: {{ master_coresPerSocket }}
+      memoryMB: {{ master_memory_size }}
+      osDisk:
+        diskSizeGB: {{ master_disk_size }}
+metadata:
+  name: {{ cluster_name }}
+networking:
+  clusterNetwork:
+    - cidr: 10.128.0.0/14
+      hostPrefix: 23
+  machineCIDR: {{ machineCIDR }}
+  networkType: OpenshiftSDN
+  serviceNetwork:
+    - 172.30.0.0/16
+platform:
+  vsphere:
+    apiVIP: {{ vcenter_VIP }}
+    ingressVIP: {{ vcenter_ingressVIP }}
+    cluster: {{ (vcenter_folder_host + '/') if vcenter_folder_host is defined else omit }}{{ vcenter_cluster }}
+    datacenter: {{ vcenter_datacenter }}
+    defaultDatastore: {{ vcenter_datastore }}
+    folder: /{{ vcenter_datacenter}}/vm/{{ (vcenter_parent_folder + '/') | default(omit) }}{{ vcenter_folder }}
+    network: {{ vcenter_network }}
+    username: {{ vcenter_username }}
+    password: {{ vcenter_password }}
+    vCenter: {{ vcenter_hostname }}
+{% if initial_ova_image_url != (initial_ova_image_url | regex_replace('https?://','')) %}
+{% if initial_ova_image_url != (initial_ova_image_url | regex_replace('\?sha256=','')) %}
+    clusterOSImage: {{ initial_ova_image_url }}
+{% else %}
+    clusterOSImage: {{ initial_ova_image_url }}{{ ('?sha256=' + initial_ova_image_sha256) | default('') }}
+{% endif %}
+{% endif %}
+{% if registry_mirror is defined %}
+imageContentSources:
+- mirrors:
+  - {{ registry_mirror }}
+  source: registry.redhat.io/redhat
+- mirrors:
+  - {{ registry_mirror }}
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - {{ registry_mirror }}
+  source: registry.svc.ci.openshift.org/ocp/release
+- mirrors:
+  - {{ registry_mirror }}
+  source: releases-art-rhcos.svc.ci.openshift.org/art/storage/releases
+- mirrors:
+  - {{ registry_mirror }}
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+{% endif %}
+publish: External
+pullSecret: '{{ lookup('env', 'OCP4_PULL_SECRET') | replace( "'", '"') | replace( 'u"', '"') }}'
+sshKey: |
+  {{ idrsapub.content | b64decode }}
+additionalTrustBundle: |
+  {{ additionalTrustBundle | indent( width=2, indentfirst=False) }}
+

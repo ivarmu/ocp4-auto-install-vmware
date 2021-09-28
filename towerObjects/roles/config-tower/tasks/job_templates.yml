@@ -1,0 +1,60 @@
+---
+- include_vars:
+    file: "{{ item }}"
+  loop:
+    - "vars/configure_tower_general.yml"
+    - "vars/configure_tower_vault.yml"
+    - "vars/configure_tower_venvs.yml"
+    - "vars/configure_tower_job_templates.yml"
+  when: configure_tower_job_templates is not defined
+
+- name: Create tower Job Templates
+  ansible.tower.tower_job_template:
+    tower_username: "{{ configure_tower_username }}"
+    tower_password: "{{ configure_tower_password }}"
+    tower_host: "{{ configure_tower_server }}"
+    validate_certs: "{{ configure_tower_validate_certs }}"
+    name: "{{ item.name }}"
+    project: "{{ item.project }}"
+    playbook: "{{ item.playbook }}"
+    job_type: "{{ item.job_type | default('run') }}"
+    description: "{{ item.description | default(omit) }}"
+    credential: "{{ item.credential | default(omit) }}"
+    credentials: "{{ item.credentials | default(omit) }}"
+    become_enabled: "{{ item.become_enabled | default('false') }}"
+    concurrent_jobs_enabled: "{{ item.concurrent_jobs_enabled | default('false') }}"
+    diff_mode_enabled: "{{ item.diff_mode_enabled | default('false') }}"
+    #extra_vars: "{{ (lookup('file', item.extra_vars_path) | from_yaml) if item.extra_vars_path is defined else omit }}"
+    extra_vars: "{{ item.extra_vars if item.extra_vars is defined else omit }}"
+    fact_caching_enabled: "{{ item.fact_caching_enabled | default('false') }}"
+    force_handlers_enabled: "{{ item.force_handlers_enabled | default('false') }}"
+    forks: "{{ item.forks | default(50) }}"
+    host_config_key: "{{ item.host_config_key | default(omit) }}"
+    inventory: "{{ item.inventory | default(omit) }}"
+    job_tags: "{{ item.job_tags | default(omit) }}"
+    limit: "{{ item.limit | default(omit) }}"
+    skip_tags: "{{ item.skip_tags | default(omit) }}"
+    start_at_task: "{{ item.start_at_task | default(omit) }}"
+    verbosity: "{{ item.verbosity | default(omit) }}"
+    vault_credential: "{{ item.vault_credential | default(omit) }}"
+    # custom_virtualenv: "{{ venv_base_path }}/{{ venv_name }}"
+    survey_enabled: "{{ item.survey_enabled | default('false') }}"
+    survey_spec: "{{ (lookup('file', item.survey_spec_file) | from_json) if item.survey_spec_file is defined else omit }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ configure_tower_job_templates }}"
+  when: configure_tower_job_templates is defined
+  delegate_to: "{{ 'localhost' if tower_local else omit }}"
+  async: 1000
+  poll: 0
+  register: jobtemplate1
+
+- name: "Configure Tower Job Templates | Wait for finish the job templates creation"
+  async_status:
+    jid: "{{ item.ansible_job_id }}"
+  register: jobtemplate1_result
+  until: jobtemplate1_result.finished
+  retries: 10
+  loop: "{{ jobtemplate1.results }}"
+  delegate_to: "{{ 'localhost' if tower_local else omit }}"
+  #no_log: true
+...

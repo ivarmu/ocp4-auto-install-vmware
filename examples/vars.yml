@@ -1,0 +1,146 @@
+---
+#### OCP Cluster Vars
+clean_install: True
+ocp4_version: '4.6.18'
+# Valid Cloud Providers: vcenter
+cloud_provider: 'vcenter'
+# Valid Cluster Names: ephemeral
+cluster_name: 'ephemeral'
+ocp4_base_domain: '<YOUR.DOMAIN>'
+machineCIDR: "<IP.NETWORK.BASE.ADDRESS/NET_PREFIX>"
+# Kubeconfig path
+kubeconfig: "{{ user_path }}/auth/kubeconfig"
+local_kubeconfig: '{{ user_path }}/.kube/{{ cluster_name }}'
+
+required_free_storage: 856 # in Gb
+required_free_memory: 40 # in Gb
+required_free_cpu: 12 # in Gb
+
+#### OCP on vSphere Vars
+vcenter_VIP: '<IP_VIP_ADDRESS>'
+vcenter_ingressVIP: '<IP_INGRESS_VIP_ADDRESS>'
+## VARS CURRENTLY PROVIDED BY SPECIFIED VAULT FILE (AND/OR BY ANSIBLE TOWER SURVEY)
+# vcenter_cluster: 'Cluster'
+# vcenter_datacenter: 'Datacenter1'
+# vcenter_datastore: 'datastore-sas'
+# vcenter_folder: "{{ cluster_name }}"
+# vcenter_network: 'VM Network'
+# vcenter_hostname: 'vcenterserver.your.domain'
+# auto_vcenter_ca_certs: False
+
+#### Only in Tower-mode
+tower_used: True
+
+#### Install Vars
+# Cliente OC: http://<WEBSERVER>/openshift-client-linux-4.6.18.tar.gz
+# Instalador: http://<WEBSERVER>/openshift-install-linux-4.6.18.tar.gz
+global_var_installer_baseurl: "http://<WEBSERVER>"
+global_var_installer_program: "openshift-install-linux-{{ ocp4_version }}.tar.gz"
+global_var_installer_clienttools: "openshift-client-linux-{{ ocp4_version }}.tar.gz"
+global_var_virtual_environment: "virtualEnvironment2.7.tar.gz"
+## VARS CURRENTLY PROVIDED BY ANSIBLE TOWER SURVEY
+# # initial_ova_image_url: "http://<WEBSERVER>/rhcos-4.6.8-x86_64-vmware.x86_64.ova"
+# # initial_ova_image_sha256: "86c21063ed98146300172a44311e166cc61afece0b0361e4070243dbe85ae032"
+# initial_ova_image_url: "http://<WEBSERVER>/rhcos-4.6.8-x86_64-vmware.x86_64.ova?sha256=86c21063ed98146300172a44311e166cc61afece0b0361e4070243dbe85ae032"
+# initial_ova_image_url: "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.6/46.82.202011260640-0/x86_64/rhcos-46.82.202011260640-0-vmware.x86_64.ova"
+# initial_ova_image_sha256: "d73c7bdfd22e5a1231e23663266744c98c10de6f08f6d1fc718e7f72d0490c4a"
+# initial_ova_image_url: "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.6/46.82.202011260640-0/x86_64/rhcos-46.82.202011260640-0-vmware.x86_64.ova?sha256=d73c7bdfd22e5a1231e23663266744c98c10de6f08f6d1fc718e7f72d0490c4a"
+registry_mirror: "<INTERNAL_REGISTRY>"
+prereqs: True
+uninstall_ocp: True # VERY CAREFUL WITH THIS VAR :)
+
+# Master nodes
+master_instance_count: 3
+master_cpus: 4
+master_coresPerSocket: 4
+master_memory_size: 16384
+master_disk_size: 40
+#
+# Worker Nodes
+worker_nodes: True
+worker_instance_count: 3
+worker_cpus: 4
+worker_coresPerSocket: 4
+worker_memory_size: 8192
+worker_disk_size: 40
+
+# Infra Nodes: if infra nodes -> move workloads
+infra_nodes: False
+infra_node_replicas: 3
+infra_cpus: 4
+infra_coresPerSocket: 4
+infra_memory_size: 8192
+infra_disk_size: 40
+
+#### Post Install Vars
+only_post_install: False
+# Disable Operator Hub Default Sources
+disable_operator_hub: True
+
+# ELK infra nodes
+elk_nodes: False
+
+# OAuth
+#oauth: htpasswd
+oauth: False
+ocp4_htpasswd_admin_user: admin
+ocp4_htpasswd_dev_user: developer
+
+ocp4_remove_kubeadmin: False
+removeselfprovisioning: True
+
+# Logging
+logging: False
+clo_node_selector: "node-role.kubernetes.io/worker="
+clo_channel: 4.6 #Define the ClusterLogging version of the operator
+es_channel: 4.6 #Define the ES version of the operator
+
+# Monitoring
+monitoring: True
+prom_retention: 1w
+prometheus_gp2_storage: 40Gi
+alertmanager_gp2_storage: 40Gi
+
+# Registry
+registry: False
+
+# ProjectRequestTemplate
+project_request_template: False
+project_request_message: "To provision namespace ask to Openshift 4 Administrators"
+install_limit_range: True
+install_network_policies: True
+install_resource_quota: True
+project_request_template_project_limits:
+  - type: Container
+    max:
+      cpu: 2
+      memory: 2Gi
+    default:
+      cpu: 500m
+      memory: 500Mi
+    defaultRequest:
+      cpu: 50m
+      memory: 256Mi
+  - type: Pod
+    max:
+      cpu: 2
+      memory: 4Gi
+
+project_request_template_resource_quota:
+  pods: 10
+  requests.cpu: 4000m
+  requests.memory: 8Gi
+  resourcequotas: 1
+  requests.storage: 50Gi
+  persistentvolumeclaims: 5
+
+### Extra DevOps Or RH Tools
+
+# ArgoCD
+argocd: False
+argoclient: False
+argocd_version: v1.6.0
+
+# ServiceMesh
+service_mesh: False
+...

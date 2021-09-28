@@ -1,0 +1,10 @@
+---
+venv_base_path: '/var/lib/awx/venv'
+venv_name: 'EphemeralOCP4_VirtualEnv'
+list_pip_package:
+  - ansible
+  - openshift
+  - psutil
+  - pyVim
+  - PyVmomi
+...

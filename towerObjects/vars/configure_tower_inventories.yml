@@ -1,0 +1,6 @@
+---
+configure_tower_inventories:
+  - name: "EphemeralOCP4localhost"
+    description: "Inventory for EphemeralOCP4 localhost"
+    organization: "Red Hat"
+...

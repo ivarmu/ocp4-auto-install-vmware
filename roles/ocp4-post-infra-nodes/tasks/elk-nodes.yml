@@ -1,0 +1,66 @@
+---
+
+- name: '[POSTINSTALL][INFRA-NODES] Grab some global cluster trivia for git to use'
+  k8s_info:
+    kubeconfig: "{{ kubeconfig }}"
+    api_version: config.openshift.io/v1
+    kind: Infrastructure
+    name: cluster
+  register: infradata
+
+# https://access.redhat.com/solutions/4287111
+- name: '[POSTINSTALL][WORKER-NODES] Apply the infra-efk label to the infra nodes'
+  k8s:
+    kubeconfig: "{{ kubeconfig }}"
+    api_version: v1
+    kind: Node
+    # name: "{{ node.metadata.name }}"
+    name: "{{ node.name }}"
+    definition:
+      metadata:
+        labels:
+          'node-role.kubernetes.io/infra-efk': ""
+  # loop: "{{ nodedata.resources }}"
+  loop: "{{ nodedata.resources | map(attribute='metadata') | list }}"
+  loop_control:
+    loop_var: node
+  when:
+    # - node.metadata.labels['node-role.kubernetes.io/worker'] is defined
+    # - node.metadata.labels['node-role.kubernetes.io/infra'] is defined
+    - node.labels['node-role.kubernetes.io/worker'] is defined
+    - node.labels['node-role.kubernetes.io/infra'] is defined
+
+- name: '[POSTINSTALL][INFRA-NODES] Deploy Infra EFK Nodes MachineSet'
+  include_role:
+    name: ocp4-post-machinesets
+  vars:
+    node_labels:
+      - "{{ infra_label }}"
+      - "{{ infra_label }}-efk"
+    name_identifier: "{{ infra_label }}"
+    taints:
+      - key: infra
+        value: reserved
+        effect: NoSchedule
+      - key: infra
+        value: reserved
+        effect: NoExecute
+      - key: logging
+        value: reserved
+        effect: NoSchedule
+      - key: logging
+        value: reserved
+        effect: NoExecute
+
+- name: '[POSTINSTALL][INFRA-NODES] Wait for Elasticsearch Nodes to be available'
+  when: _infra_node_elasticsearch_nodes | d(False) | bool
+  k8s_info:
+    api_version: v1
+    kind: Node
+    label_selectors:
+    - node-role.kubernetes.io/elasticsearch =
+  register: r_es_nodes
+  until:
+  - r_es_nodes.resources | length | int == _infra_node_elasticsearch_replicas | int
+  delay: 30
+  retries: 15

@@ -1,0 +1,16 @@
+---
+
+# TODO: Review the tolerations for the infra / elk nodes
+- name: '[POSTINSTALL][MONITORING] Apply cluster-monitoring-config config map'
+  k8s:
+    kubeconfig: "{{ kubeconfig }}"
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', 'cluster-monitoring-config.yml') }}"
+  vars:
+    ansible_python_interpreter: "{{ user_path }}/virtualEnvironment2.7/bin/python"
+  environment:
+    PYTHONPATH: "/var/lib/awx/venv/ansible/lib/python2.7/site-packages:/var/lib/awx/venv/awx/lib64/python3.6/site-packages/ansible_runner/callbacks:{{ user_path }}/virtualEnvironment2.7/lib/python2.7/site-packages/"
+...

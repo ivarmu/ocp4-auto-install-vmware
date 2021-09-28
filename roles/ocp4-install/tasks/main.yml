@@ -1,0 +1,41 @@
+---
+- include_tasks: download.yml
+  args:
+    apply:
+      tags:
+        - download
+  tags:
+    - download
+
+- include_tasks: create_config.yml
+  args:
+    apply:
+      tags:
+        - create_config
+  tags:
+    - create_config
+
+- include_tasks: install.yml
+  args:
+    apply:
+      tags:
+        - install
+  tags:
+    - install
+
+- include_tasks: set_resource_pool.yml
+  args:
+    apply:
+      tags:
+        - set_resource_pool
+  tags:
+    - set_resource_pool
+
+- include_tasks: print_info.yml
+  args:
+    apply:
+      tags:
+        - print_info
+  tags:
+    - print_info
+...

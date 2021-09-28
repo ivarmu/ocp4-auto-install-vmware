@@ -1,0 +1,34 @@
+---
+
+# Do not modify this file
+- debug:
+    var: action
+
+- block:
+    - import_tasks: oauth-htpasswd.yml
+  when: oauth == "htpasswd"
+
+# (WIP)
+#- block:
+#    - import_tasks: oauth-ldap.yml
+#  when: oauth == "ldap"
+#
+#- block:
+#    - import_tasks: oauth-azuread.yml
+#  when: oauth == "azuread"
+#
+#- block:
+#    - import_tasks: oauth-azuread.yml
+#  when: oauth == "google"
+#
+#- block:
+#    - import_tasks: oauth-azuread.yml
+#  when: oauth == "github"
+#
+- block:
+    - import_tasks: remove-kubeadmin.yml
+  when: ocp4_remove_kubeadmin | bool
+
+- block:
+    - import_tasks: remove-self-provisioner.yml
+  when: removeselfprovisioning | bool

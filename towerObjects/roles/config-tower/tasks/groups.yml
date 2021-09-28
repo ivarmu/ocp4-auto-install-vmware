@@ -1,0 +1,25 @@
+---
+- include_vars:
+    file: "{{ item }}"
+  loop:
+    - "vars/configure_tower_general.yml"
+    - "vars/configure_tower_vault.yml"
+    - "vars/configure_tower_groups.yml"
+  when: configure_tower_groups is not defined
+
+- name: Create tower groups
+  ansible.tower.tower_group:
+    tower_username: "{{ configure_tower_username }}"
+    tower_password: "{{ configure_tower_password }}"
+    tower_host: "{{ configure_tower_server }}"
+    validate_certs: "{{ configure_tower_validate_certs }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    inventory: "{{ item.inventory }}"
+    source: "{{ item.source | default(omit) }}"
+    hosts: "{{ item.hosts | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+    variables: "{{ lookup('file', '/vars/' + item.variables_file) if item.variables_file is defined else omit }}"
+  loop: "{{ configure_tower_groups }}"
+  when: configure_tower_groups is defined
+  delegate_to: "{{ 'localhost' if tower_local else omit }}"

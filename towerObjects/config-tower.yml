@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  #connection: local
+  #gather_facts: yes
+  #become: yes
+  #become_method: sudo
+  #become_user: root
+  #remote_user: ansible
+  # collections:
+  #   - ansible.tower
+  roles:
+    - role: ../roles/config-tower
+...

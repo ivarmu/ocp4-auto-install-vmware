@@ -1,0 +1,33 @@
+{
+  "name": "Uninstall OCP4 Ephemeral Cluster Survey",
+  "description": "",
+  "spec": [
+    {
+      "question_name": "Variables file",
+      "question_description": "Set the variables file to be used (git variables)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "vars_file",
+      "default": "vars.yml",
+      "choices": "vars.yml"
+    },
+    {
+      "question_name": "Cluster Name",
+      "question_description": "Set the Openshift 4 cluster name",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "cluster_name",
+      "default": "ephemeral",
+      "choices": "ephemeral"
+    },
+    {
+      "question_name": "vCenter Vault File",
+      "question_description": "vCenter Vault File which contains all the related vCenter information",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "vcenter_vault_file",
+      "default": "vcenter.yml",
+      "choices": "vcenter.yml"
+    }
+  ]
+}

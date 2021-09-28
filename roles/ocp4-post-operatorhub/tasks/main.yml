@@ -1,0 +1,17 @@
+---
+# tasks file for ocp4-post-operatorhub
+- name: '[POSTINSTALL][OPERATOR HUB] Disables the Operator Hub Default Sources'
+  k8s:
+    kubeconfig: "{{ kubeconfig }}"
+    api_version: config.openshift.io/v1
+    merge_type: merge
+    kind: OperatorHub
+    name: cluster
+    definition:
+      spec:
+        disableAllDefaultSources: true
+  vars:
+    ansible_python_interpreter: "{{ user_path }}/virtualEnvironment2.7/bin/python"
+  environment:
+    PYTHONPATH: "/var/lib/awx/venv/ansible/lib/python2.7/site-packages:/var/lib/awx/venv/awx/lib64/python3.6/site-packages/ansible_runner/callbacks:{{ user_path }}/virtualEnvironment2.7/lib/python2.7/site-packages/"
+...

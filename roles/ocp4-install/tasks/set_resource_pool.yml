@@ -1,0 +1,67 @@
+---
+# tasks file for ocp4-vcenter-destroy
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] Get vCenter Folder Information'
+  community.vmware.vmware_folder_info:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ vcenter_datacenter }}'
+  register: vcenter_folder_info
+
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] set vcenter folder info'
+  set_fact:
+    folder_names: "{{ vcenter_folder_info.flat_folder_info | selectattr('path', 'search', '^.*' + vcenter_parent_folder + '/'+ cluster_name + '$') | map(attribute='path') | list }}"
+
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] Get the list of the existing VMs'
+  vmware_vm_info:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    folder: '{{ folder_name }}'
+    validate_certs: False
+  loop: "{{ folder_names }}"
+  loop_control:
+    loop_var: folder_name
+  when: folder_names is defined
+  register: vm_list
+
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] Get the VMs UUIDs at our cluster'
+  set_fact:
+    vms_uuids: "{{ result.virtual_machines | selectattr('guest_name', 'search', '^.*' + cluster_name + '.*$') | map(attribute='uuid') | list }}"
+  when: result.virtual_machines is defined
+  loop: "{{ vm_list.results }}"
+  loop_control:
+    loop_var: result
+  no_log: true
+
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] Show the VMs UUIDs at out cluster'
+  debug:
+    var: vms_uuids
+
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] Set the vm to the Resource Pool {{ vcenter_resource_pool }}'
+  vmware_guest:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    validate_certs: False
+    datacenter: '{{ vcenter_datacenter }}'
+    uuid: "{{ vm_uuid }}"
+    resource_pool: "{{ vcenter_resource_pool | default(omit) }}"
+  register: remove_res
+  when: vms_uuids is defined
+  ignore_errors: true
+  with_items: "{{ vms_uuids }}"
+  loop_control:
+    loop_var: vm_uuid
+  async: 3600
+  poll: 0
+
+- name: '[OCP4 INSTALL][SET RESOURCE POOL] Wait for VMs to be assigned to the Resource Pool {{ vcenter_resource_pool }}'
+  async_status:
+    jid: "{{ item.ansible_job_id }}"
+  register: remove_jobs
+  when: item.ansible_job_id is defined
+  until: remove_jobs.finished
+  retries: 300
+  with_items: "{{ remove_res.results }}"
+...

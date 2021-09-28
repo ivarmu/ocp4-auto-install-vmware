@@ -1,0 +1,96 @@
+{
+  "name": "Install OCP4 Ephemeral Cluster Survey",
+  "description": "",
+  "spec": [
+    {
+      "question_name": "Variables file",
+      "question_description": "Set the variables file to be used (git variables)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "vars_file",
+      "default": "vars.yml",
+      "choices": "vars.yml"
+    },
+    {
+      "question_name": "Cluster Name",
+      "question_description": "Set the Openshift 4 cluster name",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "cluster_name",
+      "default": "ephemeral",
+      "choices": "ephemeral"
+    },
+    {
+      "question_name": "OCP4 version",
+      "question_description": "Version of the Openshift 4 Cluster",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "ocp4_version",
+      "default": "4.6.18",
+      "choices": "4.6.8\n4.6.18\n4.6.32"
+    },
+    {
+      "question_name": "Initial RHCOS OVA image URL",
+      "question_description": "The URL location of the Red Hat Enterprise Linux CoreOS (RHCOS) image that is accessible from the bastion server. Can contain the sha256. Example: 'https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.6/46.82.202011260640-0/x86_64/rhcos-46.82.202011260640-0-vmware.x86_64.ova?sha256=d73c7bdfd22e5a1231e23663266744c98c10de6f08f6d1fc718e7f72d0490c4a'",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "initial_ova_image_url",
+      "default": "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.6/46.82.202011260640-0/x86_64/rhcos-46.82.202011260640-0-vmware.x86_64.ova?sha256=d73c7bdfd22e5a1231e23663266744c98c10de6f08f6d1fc718e7f72d0490c4a",
+      "choices": "https://releases-art-rhcos.svc.ci.openshift.org/art/storage/releases/rhcos-4.6/46.82.202011260640-0/x86_64/rhcos-46.82.202011260640-0-vmware.x86_64.ova?sha256=d73c7bdfd22e5a1231e23663266744c98c10de6f08f6d1fc718e7f72d0490c4a"
+    },
+    {
+      "question_name": "Worker Node Replicas",
+      "question_description": "Number of replicas for Worker Nodes (zero replicas implies no worker nodes to be deployed)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "worker_node_replicas",
+      "default": "3",
+      "choices": "2\n3\n4"
+    },
+    {
+      "question_name": "Worker CPUs",
+      "question_description": "Number of CPUs for every Worker Node",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "worker_cpus",
+      "default": "4",
+      "choices": "4\n6\n8"
+    },
+    {
+      "question_name": "Worker Cores Per Socket",
+      "question_description": "Number of Cores Per Socket for every Worker Node",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "worker_coresPerSocket",
+      "default": "4",
+      "choices": "1\n2\n4"
+    },
+    {
+      "question_name": "Worker Memory Size",
+      "question_description": "Memory Size for every Worker Node (in MiB)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "worker_memory_size",
+      "default": "8192",
+      "choices": "8192\n16384\n32768"
+    },
+    {
+      "question_name": "Worker Disk Size",
+      "question_description": "Disk Size for every Worker Node (in GiB)",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "worker_disk_size",
+      "default": "40",
+      "choices": "40\n60\n80"
+    },
+    {
+      "question_name": "vCenter Vault File",
+      "question_description": "vCenter Vault File which contains all the related vCenter information",
+      "required": true,
+      "type": "multiplechoice",
+      "variable": "vcenter_vault_file",
+      "default": "vcenter.yml",
+      "choices": "vcenter.yml"
+    }
+  ]
+}

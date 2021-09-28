@@ -1,0 +1,38 @@
+---
+- include_vars:
+    file: "{{ item }}"
+  loop:
+    - "vars/configure_tower_general.yml"
+    - "vars/configure_tower_vault.yml"
+    - "vars/configure_tower_inventories.yml"
+  when: configure_tower_inventories is not defined
+
+- name: Create tower inventories
+  ansible.tower.tower_inventory:
+    tower_username: "{{ configure_tower_username }}"
+    tower_password: "{{ configure_tower_password }}"
+    tower_host: "{{ configure_tower_server }}"
+    validate_certs: "{{ configure_tower_validate_certs }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    state: "{{ item.state | default('present') }}"
+    organization: "{{ item.organization | default('Default') }}"
+    host_filter: "{{ item.host_filter | default(omit) }}"
+    kind: "{{ item.kind | default(omit) }}"
+    variables: "{{ (lookup('file', '/vars/' + item.variables_file) | from_yaml) if item.variables_file is defined else omit }}"
+  loop: "{{ configure_tower_inventories }}"
+  when: configure_tower_inventories is defined
+  delegate_to: "{{ 'localhost' if tower_local else omit }}"
+  async: 1000
+  poll: 0
+  register: inventories1
+
+- name: "Create Tower inventories | Wait for finish the inventories creation"
+  async_status:
+    jid: "{{ item.ansible_job_id }}"
+  register: inventories1_result
+  until: inventories1_result.finished
+  retries: 10
+  loop: "{{ inventories1.results }}"
+  delegate_to: "{{ 'localhost' if tower_local else omit }}"
+  no_log: true

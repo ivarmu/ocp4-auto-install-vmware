@@ -1,0 +1,66 @@
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  labels:
+    machine.openshift.io/cluster-api-cluster: {{ machineset.infrastructure_id }}
+  name: {{ machineset.infrastructure_id }}-{{ machineset.name_identifier }}
+  namespace: openshift-machine-api
+spec:
+  replicas: {{ machineset.infra_node_replicas }}
+  selector:
+    matchLabels:
+      machine.openshift.io/cluster-api-cluster: {{ machineset.infrastructure_id }}
+      machine.openshift.io/cluster-api-machineset: {{ machineset.infrastructure_id }}-{{ machineset.node_labels.0 }}
+  template:
+    metadata:
+      labels:
+        machine.openshift.io/cluster-api-cluster: {{ machineset.infrastructure_id }}
+        machine.openshift.io/cluster-api-machine-role: {{ machineset.node_labels.0 }}
+        machine.openshift.io/cluster-api-machine-type: {{ machineset.node_labels.0 }}
+        machine.openshift.io/cluster-api-machineset: {{ machineset.infrastructure_id }}-{{ machineset.node_labels.0 }}
+    spec:
+      metadata:
+        labels:
+{% for label in machineset.node_labels %}
+          node-role.kubernetes.io/{{ label }}: ""
+{% if ceph_namespace is defined  %}
+          cluster.ocs.openshift.io/openshift-storage: ""
+{% endif %}
+{% endfor %}
+      providerSpec:
+        value:
+          apiVersion: vsphereprovider.openshift.io/v1beta1
+          credentialsSecret:
+            name: vsphere-cloud-credentials
+          diskGiB: {{ machineset.disk_size }}
+          kind: VSphereMachineProviderSpec
+          memoryMiB: {{ machineset.memory_size }}
+          metadata:
+            creationTimestamp: null
+          network:
+            devices:
+              - networkName: "{{ vcenter_network }}"
+          numCPUs: 4
+          numCoresPerSocket: 1
+          snapshot: ""
+          template: "{{ machineset.infrastructure_id }}-rhcos"
+          workspace:
+            datacenter: "{{ vcenter_datacenter }}"
+            datastore: "{{ vcenter_datastore }}"
+            folder: "/{{ vcenter_datacenter }}/vm/{{ vcenter_folder }}"
+            # resourcepool: <vsphere_resource_pool>
+            server: "{{ vcenter_hostname }}"
+          userDataSecret:
+            name: worker-user-data
+{% if machineset.taints is defined %}
+      taints: {{ machineset.taints | to_json }}
+{% endif %}
+{#
+{% if ceph_namespace is defined  %}
+      taints:
+        - effect: NoSchedule
+          key: node.ocs.openshift.io/storage
+          value: 'true'
+{% endif %}
+#}
+

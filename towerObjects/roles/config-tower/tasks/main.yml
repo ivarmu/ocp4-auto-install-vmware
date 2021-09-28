@@ -1,0 +1,51 @@
+---
+# tasks file for config-tower
+- name: Include Tasks to config credential_types
+  include_tasks: credential_types.yml
+  args:
+    apply:
+      tags: credential_types
+  tags: credential_types
+
+- name: Include Tasks to config credentials
+  include_tasks: credentials.yml
+  args:
+    apply:
+      tags: credentials
+  tags: credentials
+
+- name: Include Tasks to config projects
+  include_tasks: projects.yml
+  args:
+    apply:
+      tags: projects
+  tags: projects
+
+- name: Include Tasks to config inventories
+  include_tasks: inventories.yml
+  args:
+    apply:
+      tags: inventories
+  tags: inventories
+
+- name: Include Tasks to config hosts
+  include_tasks: hosts.yml
+  args:
+    apply:
+      tags: hosts
+  tags: hosts
+
+- name: Include Tasks to config groups
+  include_tasks: groups.yml
+  args:
+    apply:
+      tags: groups
+  tags: groups
+
+- name: Include Tasks to config job_templates
+  include_tasks: job_templates.yml
+  args:
+    apply:
+      tags: job_templates
+  tags: job_templates
+...

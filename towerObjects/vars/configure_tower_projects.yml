@@ -1,0 +1,14 @@
+---
+configure_tower_projects:
+  - name: "Auto OCP4 Ephemeral Clusters"
+    description: "Auto OCP4 Ephemeral Clusters repository"
+    organization: "Red Hat"
+    scm_url: https://github.com/ivanamu/ocp4-auto-install-vmware.git
+    scm_type: git
+    scm_branch: 'master'
+    scm_clean: true
+    scm_delete_on_update: true
+    scm_update_on_launch: false
+    scm_update_cache_timeout: 60
+    scm_credential: "<GITHUB CREDENTIAL>"
+...

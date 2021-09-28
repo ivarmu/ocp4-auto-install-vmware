@@ -1,0 +1,7 @@
+---
+
+- import_tasks: infra-nodes.yml
+
+- import_tasks: elk-nodes.yml
+  when: elk_nodes | bool
+

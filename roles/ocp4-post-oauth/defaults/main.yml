@@ -1,0 +1,38 @@
+---
+
+# LDAP settings
+# -----------------
+ocp4_idm_admin_user: opentlc-mgr
+
+# LDAP settings
+ocp4_idm_ldap_url: ldaps://ipa1.opentlc.com:636/cn=users,cn=accounts,dc=opentlc,dc=com?uid
+ocp4_idm_ldap_ca_url: http://ipa.opentlc.com/ipa/config/ca.crt
+ocp4_idm_ldap_bind_dn: "uid=ose-mwl-auth,cn=users,cn=accounts,dc=opentlc,dc=com"
+
+# htpasswd settings
+# -----------------
+
+# Base of the users for htpasswd
+ocp4_idm_htpasswd_user_base: user
+ocp4_idm_htpasswd_user_count: 20
+
+# Set a password for the Admin User
+ocp4_idm_htpasswd_admin_password: hashmeinvault
+
+# Set a password for all htpasswd users
+ocp4_idm_htpasswd_user_password: hashmeinvault
+
+# Azure AD settings
+# -----------------
+
+#Tobefilled: hash
+
+# Google OAuth settings
+# -----------------
+
+#Tobefilled: hash
+
+# GitLab OAuth settings
+# -----------------
+
+#Tobefilled: hash

@@ -1,0 +1,13 @@
+---
+#- hosts: pipLibdep
+- hosts: all
+  gather_facts: yes
+  become: yes
+  become_method: sudo
+  become_user: root
+  #remote_user: ansible
+  roles:
+    - name: ../roles/tower-create-venv
+      vars:
+        venv_name: "{{ virtual_environment | upper() }}"
+...

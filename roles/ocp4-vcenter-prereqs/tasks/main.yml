@@ -1,0 +1,71 @@
+---
+# tasks file for ocp4-vcenter-destroy
+- name: '[OCP4 VCENTER PREREQS] Gather VMware Cluster info from vCenter'
+  community.vmware.vmware_cluster_info:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter: '{{ vcenter_datacenter }}'
+    validate_certs: no
+  delegate_to: localhost
+  register: r_C_info
+
+- name: '[OCP4 VCENTER PREREQS] Set Resource Summary information'
+  set_fact:
+    rs: "{{ r_C_info.clusters[vcenter_cluster].resource_summary }}"
+
+- name: '[OCP4 VCENTER PREREQS] Gather VMware Hosts info from vCenter'
+  community.vmware.vmware_host_facts:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    esxi_hostname: "{{ esxi_host.name }}"
+    validate_certs: no
+  delegate_to: localhost
+  loop: "{{ r_C_info.clusters[vcenter_cluster].hosts }}"
+  loop_control:
+    loop_var: esxi_host
+  register: r_H_info
+
+- name: '[OCP4 VCENTER PREREQS] Set the total number of available vCPUs'
+  set_fact:
+    total_vcpus: "{{ total_vcpus | default(0) | int + vcpu }}"
+  loop: "{{ r_H_info.results | map(attribute='ansible_facts.ansible_processor_vcpus') | list }}"
+  loop_control:
+    loop_var: vcpu
+
+- name: '[OCP4 VCENTER PREREQS] Fail if there are not enough available resources'
+  fail:
+    msg: "Not enough resources available:
+         vCPUs => required: {{ required_free_cpu }}, available: {{ ((rs.cpuCapacityMHz | int - rs.cpuUsedMHz | int) * total_vcpus | int / rs.cpuCapacityMHz | int) | round(0, 'floor') | int }}
+         Memory => required: {{ required_free_memory }}, available: {{ ((rs.memCapacityMB - rs.memUsedMB) / 1024) | int | round(0, 'floor') | int }}
+         Storage => required: {{ required_free_storage }}, available: {{ ((rs.storageCapacityMB - rs.storageUsedMB) / 1024) | int | round(0, 'floor') | int }}"
+  when:
+    - ((rs.storageCapacityMB - rs.storageUsedMB) / 1024 < required_free_storage) or
+      ((rs.memCapacityMB - rs.memUsedMB) / 1024 < required_free_memory) or
+      ((rs.cpuCapacityMHz | int - rs.cpuUsedMHz | int) * total_vcpus | int / rs.cpuCapacityMHz | int < required_free_cpu)
+    - clean_install | boolean
+
+- name: '[OCP4 VCENTER PREREQS] Create a VM folder on the given datacenter'
+  community.vmware.vcenter_folder:
+    hostname: '{{ vcenter_hostname }}'
+    username: '{{ vcenter_username }}'
+    password: '{{ vcenter_password }}'
+    datacenter_name: '{{ vcenter_datacenter }}'
+    parent_folder: '{{ vcenter_parent_folder }}'
+    folder_name: '{{ vcenter_folder }}'
+    folder_type: vm
+    state: present
+  register: vm_folder_creation_result
+
+- name: '[OCP4 VCENTER PREREQS] Show the output of the folder creation'
+  debug:
+    var: vm_folder_creation_result
+
+- name: "[OCP4 VCENTER PREREQS] Fail if the folder already exists"
+  fail:
+    msg: "The cluster folder already exists: {{ vm_folder_creation_result.result }}"
+  when:
+    - not vm_folder_creation_result.changed
+    - not vm_folder_creation_result.failed
+...

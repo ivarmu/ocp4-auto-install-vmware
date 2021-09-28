@@ -1,0 +1,4 @@
+---
+# defaults file for tower-piplibdep
+
+pip_extra_args: "--trusted-host pypi.python.org --trusted-host pypi.org --no-cache-dir"

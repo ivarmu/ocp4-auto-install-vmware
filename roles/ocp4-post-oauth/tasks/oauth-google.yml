@@ -1,0 +1,29 @@
+---
+
+- name: '[OCP4-POST-OAUTH][OCP4-GOOGLEAUTH] Ensure Google OAuth Secret'
+  k8s:
+    state: absent
+    api_version: v1
+    kind: Secret
+    name: google-openid-client-secret
+    namespace: openshift-config
+
+- name: '[OCP4-POST-OAUTH][OCP4-GOOGLEAUTH] Update Google OAuth Secret Configuration'
+  k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/google-openid-client-secret.j2
+
+- name: '[OCP4-POST-OAUTH][OCP4-GOOGLEAUTH] Update Google OAuth Configuration'
+  k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/oauth-google.j2

@@ -1,0 +1,64 @@
+---
+- name: '[COMMON PREREQS] Create a directory for the installation and other requirements'
+  file:
+    name: "{{ directory_to_create }}"
+    state: directory
+  loop:
+    - "{{ user_path }}"
+    - "{{ user_path }}/.ssh"
+    - "{{ local_kubeconfig | regex_replace('/[^/]*$', '') }}"
+    - "{{ tower_path }}"
+  loop_control:
+    loop_var: directory_to_create
+
+# - name: '[COMMON PREREQS] Copy python prerequisites file'
+#   copy:
+#     src: "{{ reqfile.filename }}"
+#     dest: "{{ user_path }}/{{ reqfile.filename }}"
+#   loop:
+#     - { filename: './python_requirements.txt' }
+#     - { filename: './python_requirements_vcenter.txt' , vcenter_reqs: "{{ cloud_provider is match('vcenter') }}" }
+#   loop_control:
+#     loop_var: reqfile
+#   when: reqfile.vcenter_reqs | default(True) | bool
+#
+# - name: '[COMMON PREREQS] Install python prerequisites'
+#   pip:
+#     requirements: "{{ user_path }}/{{ installreqfile.filename }}"
+#   loop:
+#     - { filename: 'python_requirements.txt' }
+#     - { filename: 'python_requirements_vcenter.txt' , vcenter_reqs: "{{ cloud_provider is match('vcenter') }}" }
+#   loop_control:
+#     loop_var: installreqfile
+#   when: installreqfile.vcenter_reqs | default(True) | bool
+
+- name: '[COMMON PREREQS] Generate SSH keys'
+  openssh_keypair:
+    type: ed25519
+    path: "{{ user_path }}/.ssh/id_rsa"
+
+- name: '[COMMON PREREQS] Slurp private key'
+  slurp:
+    path: "{{ user_path }}/.ssh/id_rsa"
+  register: idrsa
+
+- name: '[COMMON PREREQS] Slurp public key'
+  slurp:
+    path: "{{ user_path }}/.ssh/id_rsa.pub"
+  register: idrsapub
+
+- name: '[OCP4-INSTALL][DOWNLOAD] Download the Python Virtual Environment to be used'
+  get_url:
+    url: "{{ global_var_installer_baseurl }}/{{ global_var_virtual_environment }}"
+    dest: "{{ user_path }}"
+  register: virtenv_file
+  retries: 3
+  delay: 3
+  until: virtenv_file is not failed
+
+- name: '[COMMON PREREQS] Unarchive the Python Virtual Environment to be used'
+  unarchive:
+    src: "{{ user_path }}/virtualEnvironment2.7.tar.gz"
+    dest: "{{ user_path }}"
+
+...

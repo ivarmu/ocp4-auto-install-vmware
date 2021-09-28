@@ -1,0 +1,7 @@
+---
+configure_tower_username: "{{ vault_tower_username | default ('admin')}}"
+configure_tower_password: "{{ vault_tower_password | default ('admin') }}"
+configure_tower_server: 'towerserver.yourdomain.com'
+configure_tower_validate_certs: false
+tower_local: false
+...

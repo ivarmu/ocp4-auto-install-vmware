@@ -1,0 +1,2 @@
+[pipLibdep]
+rhel7.lab.example.com.com ansible_connection=local

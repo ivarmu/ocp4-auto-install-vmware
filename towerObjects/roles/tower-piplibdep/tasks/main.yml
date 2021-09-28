@@ -1,0 +1,37 @@
+---
+# tasks file for tower-piplibdep
+- name: "tower-piplibdep ({{ virtualenv_path }}) | Install pip libraries or depencies on Tower virtual environment | No proxy"
+  pip:
+    name: "{{ item }}"
+    virtualenv: "{{ virtualenv_path }}"
+  loop: "{{ list_pip_package }}"
+  when: not useproxy
+
+- name: "tower-piplibdep ({{ virtualenv_path }}) | Include proxy vars"
+  include_vars:
+    file: vars/vault.yml
+  when: useproxy
+
+- name: "tower-piplibdep ({{ virtualenv_path }}) | Set fact to build proxy url | Proxy with $user and $pass"
+  set_fact:
+    proxy_url: "{{ proxyuser }}:{{ proxypass }}@{{ proxyserver }}:{{ proxyport }}"
+  when: proxyuser is defined and proxypass is defined and proxyserver is defined and proxyport is defined
+
+- name: "tower-piplibdep ({{ virtualenv_path }}) | Set fact to build proxy url | Proxy url and pory"
+  set_fact:
+    proxy_url: "{{ proxyserver }}:{{ proxyport }}"
+  when: proxyuser is not defined and proxypass is not defined and proxyserver is defined and proxyport is defined
+
+- name: "tower-piplibdep ({{ virtualenv_path }}) | Install pip libraries or depencies on Tower virtual environment | Use Proxy"
+  pip:
+    name: "{{ item }}"
+    virtualenv: "{{ virtualenv_path }}"
+    extra_args: "{{ pip_extra_args }}"
+  environment:
+    HTTP_PROXY: 'http://{{ proxy_url }}'
+    HTTPS_PROXY: 'https://{{ proxy_url }}'
+    http_proxy: 'http://{{ proxy_url }}'
+    https_proxy: 'https://{{ proxy_url }}'
+  loop: "{{ list_pip_package }}"
+  when: useproxy
+...
